@@ -1,0 +1,43 @@
+----------ENYDAY DATA------------
+
+The data is reading data.
+
+Serial col:
+positive = consumption meter
+negative = production meter
+
+I need to interpolate and then calculate the power for every hour and submeter
+
+This is the data they get from the local for the battery.
+
+It is the dta for every submeter of the BTMs
+
+I  neet to interpolate the readoings to o clock and then 
+calutat ehte difference bettween reading t+1 and t to get the hourly power at t for every submeter.
+
+----------- Energy Price Data --------
+https://www.energidataservice.dk/tso-electricity/Elspotprices
+
+----------- DSO transport cost Radius Type C ----
+https://radiuselnet.dk/priser/alle/6
+
+----------- Weather data DMI historic -----------------
+https://www.dmi.dk/friedata/dokumentation/climate-data/parameters-for-station-value
+
+API: https://www.dmi.dk/friedata/dokumentation/basics
+Download: https://www.dmi.dk/friedata/dokumentation/download-data
+
+---------- Weeather data DMI predictions -------------
+
+Harmonie
+https://www.dmi.dk/friedata/dokumentation/data/forecast-data-weather-model-harmonie-for-dini-and-ig
+
+param names harmonie
+https://www.dmi.dk/friedata/dokumentation/climate-data/parameters-for-station-value
+
+https://www.dmi.dk/friedata/dokumentation/data/forecast-data-weather-model-harmonie-for-dini-and-ig#model-areas
+
+----------- Day ahead prices Nordpool, market data API ------
+Auth
+https://developers.nordpoolgroup.com/reference/authentication-and-access-to-market-data-api
+
