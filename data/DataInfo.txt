@@ -1,0 +1,33 @@
+----------- DATA IN -------------
+
+FREQUENCY DATA, data_freq 2025:
+0.1 second resulution, finland sweden and DK2, in same frequency grid so the values apply for DK2.
+https://data.fingrid.fi/en/datasets/339
+hourly data obtained, by getting hourly activation fractions where frequency leaves the normal band.
+
+FCRD PRICE DATA, data_FCRD 2025:
+hourly prices for FCRD up and FCRD down
+https://www.energidataservice.dk/tso-electricity/FcrNdDK2
+
+SPOT PRICE DATA, data_spot 2025:
+hourly resoution first part of 2025: 
+https://www.energidataservice.dk/tso-electricity/Elspotprices
+15 minute resolution second part of 2025: 
+https://energidataservice.dk/tso-electricity/DayAheadPrices
+a shift from hourly to 15 min resolution during 2025, hence combining two datasets
+houerly obtained by TODO
+
+ENERGY COMMUNITY DATA, data_ec 2025:
+Provided in collaboration with industry here, Enyday.com
+per meter energy consumption and production for two danish energy comunities with solar PV
+
+WEATHER DATA:
+obtained but not used
+
+----------- DATA OUT ------------
+
+SPOT PRICE + ENERGY COMMUNITY DATA
+combined_2025.csv 
+
+FINAL DATASET ADDING FREQUENCY
+combined_2025_with_frequency

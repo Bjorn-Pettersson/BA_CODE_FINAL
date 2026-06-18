@@ -1,0 +1,287 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[a4paper, landscape, top=1.8cm, bottom=1.8cm, left=1.8cm, right=1.8cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+% Landscape A4 text width = 297 - 36 = 261 mm
+% tabcolsep = 3 pt; 5 column gaps = 5 × 6 pt = 30 pt = 10.6 mm
+% Content available = 261 - 10.6 = 250.4 mm = 25.04 cm
+% Column widths below: 2.6+4.0+10.2+4.7+1.7+1.6 = 24.8 cm (fits 24.83 cm available)
+\setlength{\tabcolsep}{3pt}
+
+\begin{document}
+
+\section*{Dataset and Model-Variable Reference}
+
+Table~\ref{tab:sources} summarises the raw data sources.
+Table~\ref{tab:lineage} traces each of the ten model inputs from its raw file
+column through preprocessing to the MILP variable symbol.
+Columns present in the combined CSV but not consumed by the model
+(FCR-N prices, \texttt{Total} auction rows, \texttt{freq\_avg\_hz},
+FCR-N activation fractions, all weather variables, and
+\texttt{spot\_exkl\_vat\_ore\_kwh}) are omitted.
+
+% ===========================================================================
+%  TABLE 1 — Sources
+% ===========================================================================
+\setlength{\tabcolsep}{6pt}   % restore normal spacing for this simple table
+\begin{table}[ht]
+\centering
+\caption{Raw data sources consumed by the model.}
+\label{tab:sources}
+\small
+\begin{tabular}{L{3.5cm} L{9.5cm} C{3.0cm} C{3.5cm} C{2.2cm}}
+\toprule
+Dataset &
+Source / URL &
+Period (UTC) &
+Native resolution &
+Raw DK2 rows \\
+\midrule
+
+Nordic system frequency &
+\url{https://data.fingrid.fi/en/datasets/339} \ (Fingrid, dataset id 339) &
+2025, full year & 0.1\,s (10\,Hz) & $\approx315\,\text{M}$ \\[3pt]
+
+Day-ahead spot prices (hourly) &
+\url{https://www.energidataservice.dk/tso-electricity/Elspotprices} &
+Jan\,--\,Sep 2025 & 1\,h & 6\,551 \\[3pt]
+
+Day-ahead spot prices (15\,min) &
+\url{https://energidataservice.dk/tso-electricity/DayAheadPrices} &
+Oct\,--\,Dec 2025 & 15\,min & 8\,836 \\[3pt]
+
+EC smart-meter data (\emph{b}-type) &
+Enyday.com — \texttt{data\_in/data\_ec/b\_data.csv} &
+2025, full year & Irregular cumulative & 496\,121 \\[3pt]
+
+EC smart-meter data (\emph{s}-type) &
+Enyday.com — \texttt{data\_in/data\_ec/s\_data.csv} &
+2025, full year & Irregular cumulative & 547\,852 \\[3pt]
+
+FCR-D / FCR-N auction prices &
+\url{https://www.energidataservice.dk/tso-electricity/FcrNdDK2} &
+2025, full year & 1\,h & 78\,840 \\
+
+\bottomrule
+\end{tabular}
+\end{table}
+
+\bigskip
+
+% ===========================================================================
+%  TABLE 2 — Column lineage (6 col, tabcolsep=3pt)
+% ===========================================================================
+\setlength{\tabcolsep}{3pt}
+\setlength{\emergencystretch}{5pt}
+
+\begin{longtable}{L{2.6cm} L{4.0cm} L{10.2cm} L{4.7cm} C{1.7cm} C{1.6cm}}
+
+\caption{Model input lineage: raw column $\to$ preprocessing $\to$ model variable.
+  In \texttt{01\_Back\_test.ipynb} cell~8, all \texttt{ore/kWh} columns are divided
+  by 100 to obtain DKK/kWh before entering the solver.}
+\label{tab:lineage} \\
+
+\toprule
+Source file &
+Raw column(s) &
+Preprocessing applied &
+Final CSV column &
+Symbol &
+Unit \\
+\midrule
+\endfirsthead
+
+\multicolumn{6}{l}{\small\textit{Table~\ref{tab:lineage} continued\ldots}} \\[2pt]
+\toprule
+Source file &
+Raw column(s) &
+Preprocessing applied &
+Final CSV column &
+Symbol &
+Unit \\
+\midrule
+\endhead
+\bottomrule
+\endlastfoot
+
+%% ── EC data ─────────────────────────────────────────────────────────────────
+\multicolumn{6}{l}{\small\textbf{EC smart-meter data} \ (b\_data.csv / s\_data.csv, Enyday.com)} \\[3pt]
+
+\texttt{b\_data.csv}\newline
+\texttt{s\_data.csv} &
+\texttt{Consumption}\newline
+(cumulative kWh;\newline
+load serials: 1--57\newline
+excl.\ 15 for b;\newline
+58--120 excl.\ 107 for s) &
+(1) Expand to 8760-hour grid per serial.
+(2) Linear-interpolate missing cumulative readings
+(3\,299 corrected for b; 4\,123 for s).
+(3) Hourly delta via \texttt{.diff()}.
+(4) Sum over all non-PV serials per hour. &
+\texttt{consumption} &
+$D_{e,t}$ &
+kWh/h \\[6pt]
+
+\texttt{b\_data.csv}\newline
+\texttt{s\_data.csv} &
+\texttt{Consumption}\newline
+(cumulative kWh;\newline
+PV serial only:\newline
+$-1$ for b-type;\newline
+$-2$ for s-type) &
+Same steps (1)--(3) as above, applied to PV serial only. &
+\texttt{pv\_production\_kwh} &
+$\mathrm{PV}_{e,t}$ &
+kWh/h \\[6pt]
+
+\midrule
+%% ── Spot prices ──────────────────────────────────────────────────────────────
+\multicolumn{6}{l}{\small\textbf{Spot prices} \ (Elspotprices.csv Jan--Sep; DayAheadPrices.csv Oct--Dec, Energidataservice)} \\[3pt]
+
+\texttt{Elspot-}\newline
+\texttt{prices.csv}\newline
+\texttt{DayAhead-}\newline
+\texttt{Prices.csv} &
+\texttt{SpotPriceDKK}\newline
+(DKK/MWh; hourly)\newline
+\texttt{DayAheadPrice-}\newline
+\texttt{DKK}\newline
+(DKK/MWh; 15-min,\newline
+averaged to hourly) &
+(1) Average 15-min prices within each hour (DayAheadPrices only).
+(2) Merge: \texttt{Elspotprices} takes priority for overlapping hours near the Oct transition;
+one missing terminal hour (2025-12-31 23:00) filled by forward-fill.
+(3) Convert DKK/MWh $\div$ 10 $=$ \o{}re/kWh.
+(4) Add time-of-use DSO tariff (Radius 2026 schedule),
+transmission fee (5.80), system fee (5.40), electricity duty (0.80) [\o{}re/kWh excl.\ VAT].
+(5) Multiply total by 1.25 (25\,\% VAT). &
+\texttt{buy\_price\_inkl\_}\newline
+\texttt{vat\_ore\_kwh} &
+$\lambda_t^{\mathrm{im}}$ &
+\o{}re/kWh \\[6pt]
+
+\texttt{Elspot-}\newline
+\texttt{prices.csv}\newline
+\texttt{DayAhead-}\newline
+\texttt{Prices.csv} &
+Same as above &
+Steps (1)--(3) as above.
+Subtract feed-in handling fee 0.59\,\o{}re/kWh (incl.\ VAT).
+\emph{Negative values possible during negative-price hours.} &
+\texttt{sell\_price\_inkl\_}\newline
+\texttt{vat\_ore\_kwh} &
+$\lambda_t^{\mathrm{ex}}$ &
+\o{}re/kWh \\[6pt]
+
+\midrule
+%% ── FCR-D prices ─────────────────────────────────────────────────────────────
+\multicolumn{6}{l}{\small\textbf{FCR-D auction clearing prices} \ (FcrNdDK2.csv, Energidataservice)} \\[3pt]
+
+\texttt{FcrNd-}\newline
+\texttt{DK2.csv} &
+\texttt{PriceTotalEUR}\newline
+where\newline
+\texttt{ProductName=}\newline
+\quad\texttt{"FCR-D upp"}\newline
+\texttt{AuctionType=}\newline
+\quad\texttt{"D-1 early"} &
+(1) Pivot long-to-wide: one row per UTC hour, separate columns per
+product $\times$ auction type combination.
+(2) Unit conversion: EUR/MW/h $\times$ 0.746 $=$ \o{}re/kWh
+\newline(using fixed EUR/DKK\,=\,7.46;
+$1\,\text{EUR/MW} = 7.46\,\text{DKK}/1000\,\text{kWh} = 0.746\,\text{\o{}re/kWh}$).
+(3) Negative values clipped to 0 (\texttt{.clip(lower=0)}). &
+\texttt{price\_ore\_kwh\_}\newline
+\texttt{fcr\_d\_upp\_\_}\newline
+\texttt{d\_1\_early} &
+$\lambda_t^{\mathrm{FCRD}\uparrow,e}$ &
+\o{}re/kWh \\[6pt]
+
+\texttt{FcrNd-}\newline
+\texttt{DK2.csv} &
+\texttt{PriceTotalEUR}\newline
+\texttt{"FCR-D upp"}\newline
+\texttt{"D-1 late"} &
+Same pivot and unit conversion as above. &
+\texttt{price\_ore\_kwh\_}\newline
+\texttt{fcr\_d\_upp\_\_}\newline
+\texttt{d\_1\_late} &
+$\lambda_t^{\mathrm{FCRD}\uparrow,l}$ &
+\o{}re/kWh \\[6pt]
+
+\texttt{FcrNd-}\newline
+\texttt{DK2.csv} &
+\texttt{PriceTotalEUR}\newline
+\texttt{"FCR-D ned"}\newline
+\texttt{"D-1 early"} &
+Same pivot and unit conversion as above. &
+\texttt{price\_ore\_kwh\_}\newline
+\texttt{fcr\_d\_ned\_\_}\newline
+\texttt{d\_1\_early} &
+$\lambda_t^{\mathrm{FCRD}\downarrow,e}$ &
+\o{}re/kWh \\[6pt]
+
+\texttt{FcrNd-}\newline
+\texttt{DK2.csv} &
+\texttt{PriceTotalEUR}\newline
+\texttt{"FCR-D ned"}\newline
+\texttt{"D-1 late"} &
+Same pivot and unit conversion as above. &
+\texttt{price\_ore\_kwh\_}\newline
+\texttt{fcr\_d\_ned\_\_}\newline
+\texttt{d\_1\_late} &
+$\lambda_t^{\mathrm{FCRD}\downarrow,l}$ &
+\o{}re/kWh \\[6pt]
+
+\midrule
+%% ── Frequency ───────────────────────────────────────────────────────────────
+\multicolumn{6}{l}{\small\textbf{System frequency} \ (Taajuusdata*.csv, 365 daily files, Fingrid dataset 339)} \\[3pt]
+
+\texttt{Taajuus-}\newline
+\texttt{data*.csv}\newline
+(365 files) &
+\texttt{Value} [Hz]\newline
+sampled at 0.1\,s\newline
+($\approx864\,000$\newline
+readings/day) &
+Per-reading activation factor (piecewise linear, Crowley et al.\ 2025):
+$a_\tau^{\uparrow} = \max\!\bigl(0,\,\min\!\bigl(1,\,(49.9-f_\tau)/0.4\bigr)\!\bigr)$.
+Hourly mean: $y_t^{\uparrow} = \frac{1}{n_t}\sum_{\tau\in t}a_\tau^{\uparrow}$.
+Hours with $n_t < 18\,000$ readings set \texttt{data\_quality\_flag=1}
+and excluded from all model runs. &
+\texttt{y\_act\_fcrd\_up} &
+$y_t^{\mathrm{actFCRD}\uparrow}$ &
+$[0,1]$ \\[6pt]
+
+\texttt{Taajuus-}\newline
+\texttt{data*.csv}\newline
+(365 files) &
+\texttt{Value} [Hz]\newline
+sampled at 0.1\,s &
+Per-reading activation factor:
+$a_\tau^{\downarrow} = \max\!\bigl(0,\,\min\!\bigl(1,\,(f_\tau-50.1)/0.4\bigr)\!\bigr)$.
+Hourly mean as above.
+Same quality filter applies. &
+\texttt{y\_act\_fcrd\_down} &
+$y_t^{\mathrm{actFCRD}\downarrow}$ &
+$[0,1]$ \\[6pt]
+
+\end{longtable}
+
+\noindent\textbf{Derived quantity (not loaded from CSV):}
+The buy-back price $\lambda_t^{\mathrm{FCRDbb}}$ in the late-auction objective is
+$\max(\lambda_t^{\mathrm{FCRD}\uparrow,e},\,\lambda_t^{\mathrm{FCRD}\uparrow,l})$,
+computed inside \texttt{build\_late()} in \texttt{01\_Back\_test.ipynb}, and analogously for down.
+
+\end{document}
