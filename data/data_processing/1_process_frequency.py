@@ -22,7 +22,8 @@ import pandas as pd
 # Paths
 # ---------------------------------------------------------------------------
 BASE_DIR   = Path(__file__).parent
-OUTPUT_DIR = BASE_DIR / "data" / "processed"
+FREQ_DIR   = BASE_DIR.parent / "data_in" / "data_freq"
+OUTPUT_DIR = BASE_DIR.parent / "data_out"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 OUTPUT_CSV_TRIAL = OUTPUT_DIR / "frequency_activation_factors_2025_TRIAL.csv"
@@ -395,7 +396,7 @@ def main():
     print("=" * 70)
 
     # --- Step 0: Discover folders ---
-    month_folders = discover_month_folders(BASE_DIR)
+    month_folders = discover_month_folders(FREQ_DIR)
     if not month_folders:
         raise RuntimeError(f"No month folders found under {BASE_DIR}")
 

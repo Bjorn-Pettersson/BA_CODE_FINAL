@@ -20,9 +20,10 @@ import pandas as pd
 
 
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_COMBINED = BASE_DIR / "combined_2025_clean.csv"
-DEFAULT_FREQUENCY = BASE_DIR / "frequency_activation_factors_2025.csv"
-DEFAULT_OUTPUT = BASE_DIR / "combined_2025_with_frequency.csv"
+DATA_OUT = BASE_DIR.parent / "data_out"
+DEFAULT_COMBINED  = DATA_OUT / "combined_2025_clean.csv"
+DEFAULT_FREQUENCY = DATA_OUT / "frequency_activation_factors_2025.csv"
+DEFAULT_OUTPUT    = DATA_OUT / "combined_2025_with_frequency.csv"
 
 
 def parse_args() -> argparse.Namespace:

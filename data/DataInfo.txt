@@ -1,33 +1,73 @@
 ----------- DATA IN -------------
 
 FREQUENCY DATA, data_freq 2025:
-0.1 second resulution, finland sweden and DK2, in same frequency grid so the values apply for DK2.
-https://data.fingrid.fi/en/datasets/339
-hourly data obtained, by getting hourly activation fractions where frequency leaves the normal band.
+0.1 second resolution, Finland, Sweden and DK2 operate in the same synchronous grid
+so the activation values apply directly to DK2.
+Source: https://data.fingrid.fi/en/datasets/339
+Processed by: data_processing/1_process_frequency.py
+Output:       data_out/frequency_activation_factors_2025.csv
+Method: hourly FCR-D and FCR-N activation fractions computed from the share of
+seconds per hour in which frequency leaves the normal band, using the piecewise
+linear formulas in Crowley et al. (2024).
 
 FCRD PRICE DATA, data_FCRD 2025:
-hourly prices for FCRD up and FCRD down
-https://www.energidataservice.dk/tso-electricity/FcrNdDK2
+Hourly auction prices for FCR-D up/down and FCR-N (DK2), EUR/MW/h.
+Source: https://www.energidataservice.dk/tso-electricity/FcrNdDK2
+Processed by: data_processing/1b_process_fcrd.py
+Unit conversion: EUR/MW/h × 7.46 (DKK/EUR) ÷ 10 = øre/kWh
 
 SPOT PRICE DATA, data_spot 2025:
-hourly resoution first part of 2025: 
-https://www.energidataservice.dk/tso-electricity/Elspotprices
-15 minute resolution second part of 2025: 
-https://energidataservice.dk/tso-electricity/DayAheadPrices
-a shift from hourly to 15 min resolution during 2025, hence combining two datasets
-houerly obtained by TODO
+Hourly resolution for the first part of 2025 (Elspotprices dataset):
+  https://www.energidataservice.dk/tso-electricity/Elspotprices
+15-minute resolution for the second part of 2025 (DayAheadPrices dataset):
+  https://energidataservice.dk/tso-electricity/DayAheadPrices
+A shift from hourly to 15-minute resolution occurred during 2025; both sources
+are combined and averaged to hourly in step 0_process_spot_ec.ipynb.
 
 ENERGY COMMUNITY DATA, data_ec 2025:
-Provided in collaboration with industry here, Enyday.com
-per meter energy consumption and production for two danish energy comunities with solar PV
+Per-meter hourly energy consumption and PV production for two Danish energy
+communities ('b' and 's'), provided by Enyday.com.
+Processed by: data_processing/0_process_spot_ec.ipynb
 
 WEATHER DATA:
-obtained but not used
+Fetched from Open-Meteo API via data_processing/_process_weather.ipynb /
+config.py. Downloaded but not used in the final study.
+
+----------- DATA PROCESSING PIPELINE --------
+
+Step 0 — data_processing/0_process_spot_ec.ipynb
+  Reads  : data_in/data_spot/Elspotprices.csv
+           data_in/data_spot/DayAheadPrices.csv
+           data_in/data_ec/  (b_data and s_data CSVs)
+  Writes : data_out/spot_prices_2025_complete.csv
+           data_out/combined_2025.csv
+             (one row per hour × ec_id, with spot + buy/sell prices, EC load/PV)
+
+Step 1 — data_processing/1_process_frequency.py   [heavy, skip if output exists]
+  Reads  : data_in/data_freq/  (monthly Fingrid 0.1-second CSV files)
+  Writes : data_out/frequency_activation_factors_2025.csv
+
+Step 1b — data_processing/1b_process_fcrd.py
+  Reads  : data_in/data_FCRD/FcrNdDK2.csv
+           data_out/combined_2025.csv
+  Writes : data_out/combined_2025_clean.csv
+             (adds 9 FCRD price columns in øre/kWh)
+
+Step 2 — data_processing/2_combine_hourly_2025.py
+  Reads  : data_out/combined_2025_clean.csv
+           data_out/frequency_activation_factors_2025.csv
+  Writes : data_out/combined_2025_with_frequency.csv  ← FINAL DATASET
+
+Step 3 — data_processing/3_check_combined_frequency.ipynb
+  Validation notebook; reads combined_2025_with_frequency.csv and reports
+  column completeness and NaN counts.
 
 ----------- DATA OUT ------------
 
-SPOT PRICE + ENERGY COMMUNITY DATA
-combined_2025.csv 
-
-FINAL DATASET ADDING FREQUENCY
-combined_2025_with_frequency
+combined_2025.csv                      — step 0 output (spot + EC data)
+combined_2025_clean.csv                — step 1b output (adds FCRD prices)
+frequency_activation_factors_2025.csv  — step 1 output (hourly activation factors)
+combined_2025_with_frequency.csv       — FINAL dataset used by notebooks
+backtest_upper_bound_2025.csv          — result output from 01_Back_test_6_LER.ipynb
+individual_day_results.csv             — result output from 01_Back_test_6_LER.ipynb
+portfolio_study_2025.csv               — result output from 01b_portfolio_study.ipynb

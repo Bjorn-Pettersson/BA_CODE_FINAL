@@ -1,7 +1,7 @@
 
 PRICE_AREA       = "DK2"
 
-# Radius DSO network tariffs 2026 (excl. VAT, øre/kWh)
+# Radius DSO network tariffs 2025 (excl. VAT, øre/kWh)
 DSO_TARIFFS = {
     "winter": {                        # Oct–Mar
         "months": [10, 11, 12, 1, 2, 3],
@@ -33,8 +33,8 @@ FEEDIN_TARIFF_EXKL   = FEEDIN_TARIFF_INKL / VAT_MULTIPLIER
 
 # WEATHER
 
-OUTPUT_ACTUAL_CSV      = "data_out/weather_data_2025_historical.csv"
-OUTPUT_COMPARISON_CSV  = "data_out/weather_actuals_vs_forecasts_2025.csv"
+OUTPUT_ACTUAL_CSV      = "../data_out/weather_data_2025_historical.csv"
+OUTPUT_COMPARISON_CSV  = "../data_out/weather_actuals_vs_forecasts_2025.csv"
 
 # Keep the notebook aligned with the original time window
 START_DATE             = "2025-01-01"
